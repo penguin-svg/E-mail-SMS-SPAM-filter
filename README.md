@@ -1,4 +1,4 @@
 # E-mail-SMS-SPAM-filter
 this is my first Git Repository.
 <br>
-Author - Subhanker Kumar
+Author - Subhanker
