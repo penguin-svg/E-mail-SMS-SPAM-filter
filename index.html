@@ -4,15 +4,377 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Spam SMS Detector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
+            top: -200px;
+            right: -200px;
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, transparent 70%);
+            bottom: -150px;
+            left: -150px;
+            animation: pulse 5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0.5; }
+        }
+
+        .container {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 50px;
+            max-width: 700px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: #fff;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: none;
+            height: 180px;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        textarea::placeholder {
+            color: #475569;
+        }
+
+        .char-count {
+            position: absolute;
+            bottom: 12px;
+            right: 20px;
+            color: #64748b;
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .result-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            display: none;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .result-card.show {
+            display: block;
+        }
+
+        .result-card.spam {
+            border-color: rgba(239, 68, 68, 0.5);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .result-card.safe {
+            border-color: rgba(34, 197, 94, 0.5);
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .result-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .result-card.spam .result-icon {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .result-card.safe .result-icon {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .result-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .result-text {
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #94a3b8;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(59, 130, 246, 0.2);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Spam SMS Detector</h1>
-    <form action="">
-        <textarea name="" id="" cols="30" rows="10"></textarea>
-        <button type="submit">Detect</button>
-    </form>
+    <div class="container">
+        <div class="header">
+            <h1>SMS Guardian</h1>
+            <p class="subtitle">AI-powered spam detection for your messages</p>
+        </div>
+
+        <form id="detectorForm">
+            <div class="input-wrapper">
+                <textarea 
+                    id="messageInput" 
+                    placeholder="Paste your SMS message here..."
+                    maxlength="500"
+                ></textarea>
+                <span class="char-count" id="charCount">0/500</span>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn-primary">Scan Message</button>
+                <button type="button" class="btn-secondary" onclick="clearAll()">Reset</button>
+            </div>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing message...</p>
+        </div>
+
+        <div id="result" class="result-card"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('detectorForm');
+        const resultDiv = document.getElementById('result');
+        const messageInput = document.getElementById('messageInput');
+        const charCount = document.getElementById('charCount');
+        const loading = document.getElementById('loading');
+
+        messageInput.addEventListener('input', function() {
+            charCount.textContent = `${this.value.length}/500`;
+        });
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!messageInput.value.trim()) {
+                return;
+            }
+
+            resultDiv.classList.remove('show');
+            loading.classList.add('show');
+
+            setTimeout(() => {
+                detectSpam();
+                loading.classList.remove('show');
+            }, 1000);
+        });
+
+        function detectSpam() {
+            const message = messageInput.value.trim().toLowerCase();
+            
+            const spamKeywords = ['winner', 'congratulations', 'free', 'click here', 'urgent', 
+                                  'claim', 'prize', 'limited time', 'act now', 'cash', 
+                                  'credit', 'loan', 'discount', 'offer', 'bonus', 'risk-free'];
+            
+            const isSpam = spamKeywords.some(keyword => message.includes(keyword));
+            
+            showResult(isSpam);
+        }
+
+        function showResult(isSpam) {
+            if (isSpam) {
+                resultDiv.className = 'result-card spam show';
+                resultDiv.innerHTML = `
+                    <div class="result-header">
+                        <div class="result-icon">🚨</div>
+                        <div class="result-title">Spam Detected</div>
+                    </div>
+                    <p class="result-text">
+                        This message contains suspicious keywords commonly found in spam. 
+                        Avoid clicking links or sharing personal information.
+                    </p>
+                `;
+            } else {
+                resultDiv.className = 'result-card safe show';
+                resultDiv.innerHTML = `
+                    <div class="result-header">
+                        <div class="result-icon">✓</div>
+                        <div class="result-title">Looks Safe</div>
+                    </div>
+                    <p class="result-text">
+                        No obvious spam indicators detected. However, always exercise caution 
+                        with unsolicited messages.
+                    </p>
+                `;
+            }
+        }
+
+        function clearAll() {
+            messageInput.value = '';
+            charCount.textContent = '0/500';
+            resultDiv.classList.remove('show');
+            loading.classList.remove('show');
+        }
+    </script>
 </body>
 
 </html>
